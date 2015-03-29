@@ -1,17 +1,47 @@
 ---
-title: "Projet M2C_5"
+title: "Projet M2CI_5"
 output: html_document
 ---
+**Sujet Langage R - Règles d'association**
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+**Contexte:**
+
+*A partir des données bancaire, l'idée est de construire un ensemble de règles à l'aide de l'algorithme APRIORI et une typologie des individus par une procédure de classification automatique*
+
+
+
+```{r, echo=FALSE, cache=TRUE, message=FALSE}
 library(data.table)
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-#{r, echo=FALSE, cache=TRUE, message=FALSE}
-```{r}
 data<-read.csv("bank-data.csv")
+````
+
+**Affichage des dimensions du fichier Bank_Data.csv:**
+```{r, echo=FALSE, cache=TRUE, message=FALSE}
 dim(data)
+````
+Le fichier contient 600 lignes et 12 colonnes
+
+**Cette commande permet d'avoir un résumer de nos données:**
+```{r}
 summary(data)
+```
+
+**Recodage des variables "Age" et "Income" en trois classes d'intervalle:**
+
+- ***Age*** ({0-34, 35-51, 52-67})
+```{r}
 table(cut(data$age,breaks = c(0, 35, 52, 67),include.lowest = TRUE))
+```
+Nous avons donc dans l'intervalle:
+  
+  *- {0-34} 209 individus*
+  
+  *- {35-51} 222 individus*
+  
+  *- {52-67} 169 individus*
+
+- ***Income*** ({0-24386, 24387-43758, 43759-63130})
+```{r}
 table(cut(data$income,breaks = c(0, 24386, 43758, 63130),include.lowest = TRUE))
 ```
 ```{r}
