@@ -11,6 +11,7 @@ output: html_document
 
 
 ```{r, echo=FALSE, cache=TRUE, message=FALSE}
+setwd("~/Documents/ESME/Master_2/Semestre2/R/R/Tp_R_M2CI_5")
 library(data.table)
 data<-read.csv("bank-data.csv")
 ````
@@ -25,12 +26,51 @@ Le fichier contient 600 lignes et 12 colonnes
 ```{r}
 summary(data)
 ```
+On constate qu'il nous manque les ecart-types/variances pour les colonnes AGE, INCOME et CHILDREN
+
+***AGE***
+```{r}
+eta <- var(data$age, na.rm = TRUE)
+va <- sd(data$age, na.rm = TRUE)
+```
+
+
+***INCOME***
+```{r}
+eti <- var(data$income, na.rm = TRUE)
+vi <- sd(data$income, na.rm = TRUE)
+```
+
+
+***CHILDREN***
+```{r}
+etc <- var(data$children, na.rm = TRUE)
+vc <- sd(data$children, na.rm = TRUE)
+```
+
+
+
+On met les valeurs dans une data.frame
+```{r}
+summaryplus <- data.frame(ECARTTYPE=c(round(eta,2), round(eti,2), round(etc,2)), VARIANCE=c(round(va,2), round(vi,2), round(vc,2)), row.names=c("AGE","INCOME","CHILDREN"))
+```
+
+On affiche summaryplus
+```{r}
+summaryplus
+```
+
+Plus : Utilisation de graphe peut etre intéressant pour avoir un aperçu global
+```{r}
+barplot(table(data$age))
+````
 
 **Recodage des variables "Age" et "Income" en trois classes d'intervalle:**
 
 - ***Age*** ({0-34, 35-51, 52-67})
 ```{r}
 table(cut(data$age,breaks = c(0, 35, 52, 67),include.lowest = TRUE))
+data$age1<- cut(data$age,breaks = c(0, 35, 52, 67),include.lowest = TRUE,labels = c("Young", "Middle Age", "Old"))
 ```
 Nous avons donc dans l'intervalle:
   
@@ -40,18 +80,132 @@ Nous avons donc dans l'intervalle:
   
   *- {52-67} 169 individus*
 
-- ***Income*** ({0-24386, 24387-43758, 43759-63130})
+- ***Income*** (Intervalle de {0-24386, 24387-43758, 43759-63130})
 ```{r}
 table(cut(data$income,breaks = c(0, 24386, 43758, 63130),include.lowest = TRUE))
+data$income1<- cut(data$income,breaks = c(0, 24386, 43758, 63130),include.lowest = TRUE,labels = c("Poor", "Middle Rich", "Rich"))
 ```
+Nous avons donc dans l'intervalle:
+  
+  *- {0-24386} 285 individus*
+  
+  *- {24387-43758} 235 individus*
+  
+  *- {43759-63130} 79 individus*
+  
+  
 ```{r}
-d<-head(data)
-summary(d)
+#head(data)
+summary(data)
 ```
-You can also embed plots, for example:
 
-```{r, echo=FALSE}
-plot(data$income)
-```
+
+
+**Mining Association Rules and Frequent Itemsets avec "arules"**
+
+#Install the R package arules
+#install.packages("arules")
+
+#load the arules package
+library("arules")
+
+sapply(data,class)
+data$age<-NULL
+data$income<-NULL
+data$children<-as.factor(data$children)
+txn = read.transactions("bank-data.csv")
+
+
+trx<-as(data,"transactions")
+head(trx,10)
+summary(trx)
+rules = apriori(trx, parameter = list(support= 0.1))
+
+
+***SANS le LIFT supérieur ou égal à 1.5***
+
+rules.sub <- subset(rules, subset = lhs %ain% c("income1=Poor"))
+
+Ce qu'on obtient avec inspect(rules.sub)
+  lhs               rhs                 support confidence     lift
+1 {sex=FEMALE,                                                     
+   age1=Young,                                                     
+   income1=Poor} => {current_act=YES} 0.1166667  0.8139535 1.073345
+2 {save_act=YES,                                                   
+   age1=Young,                                                     
+   income1=Poor} => {current_act=YES} 0.1483333  0.8018018 1.057321
+3 {children=0,                                                     
+   pep=NO,                                                         
+   income1=Poor} => {married=YES}     0.1000000  0.8450704 1.280410
+4 {mortgage=NO,                                                    
+   pep=NO,                                                         
+   age1=Young,                                                     
+   income1=Poor} => {married=YES}     0.1000000  0.8000000 1.212121
+5 {mortgage=NO,                                                    
+   pep=NO,                                                         
+   age1=Young,                                                     
+   income1=Poor} => {current_act=YES} 0.1000000  0.8000000 1.054945
+6 {save_act=YES,                                                   
+   mortgage=NO,                                                    
+   pep=NO,                                                         
+   income1=Poor} => {married=YES}     0.1016667  0.8026316 1.216108
+
+rules.sub <- subset(rules, subset = lhs %ain% c("income1=Middle Rich"))
+
+inspect(rules.sub)
+
+lhs                      rhs               support confidence     lift
+1 {mortgage=NO,                                                         
+   pep=NO,                                                              
+   income1=Middle Rich} => {married=YES}       0.105  0.8289474 1.255981
+2 {save_act=YES,                                                        
+   mortgage=NO,                                                         
+   income1=Middle Rich} => {current_act=YES}   0.135  0.8019802 1.057556
+   
+rules.sub <- subset(rules, subset = lhs %ain% c("income1=Rich"))
+
+inspect(rules.sub)
+
+lhs                  rhs              support confidence     lift
+1 {income1=Rich}    => {age1=Old}     0.1150000  0.8734177 3.100891
+2 {income1=Rich}    => {save_act=YES} 0.1316667  1.0000000 1.449275
+3 {age1=Old,                                                       
+   income1=Rich}    => {save_act=YES} 0.1150000  1.0000000 1.449275
+4 {save_act=YES,                                                   
+   income1=Rich}    => {age1=Old}     0.1150000  0.8734177 3.100891
+5 {current_act=YES,                                                
+   income1=Rich}    => {save_act=YES} 0.1033333  1.0000000 1.449275
+
+
+***AVEC le LIFT supérieur ou égal à 1.5***
+rules.sub <- subset(rules, subset = lhs %ain% c("income1=Poor"))
+
+Ce qu'on obtient avec inspect(rules.sub)
+NULL
+
+rules.sub <- subset(rules, subset = lhs %ain% c("income1=Middle Rich"))
+
+Ce qu'on obtient avec inspect(rules.sub)
+NULL
+
+rules.sub <- subset(rules, subset = lhs %ain% c("income1=Rich"))
+
+Ce qu'on obtient avec inspect(rules.sub)
+lhs               rhs        support confidence     lift
+1 {income1=Rich} => {age1=Old}   0.115  0.8734177 3.100891
+2 {save_act=YES,                                          
+   income1=Rich} => {age1=Old}   0.115  0.8734177 3.100891
+
+
+
+#rules = apriori(trx, parameter = list(support= 0.1), appearance = list(items = c( "income1=Rich")))
+
+
+#summary(rules)
+#Rules = subset(rules, subset = lift > 1.5)
+
+
+
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
